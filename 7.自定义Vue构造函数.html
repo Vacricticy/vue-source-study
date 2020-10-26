@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app" class="div1">
+      <div class="box">
+        <div class="div1">{{name}}</div>
+        <div class="div2">{{age}}</div>
+        <div class="div3">{{gender}}</div>
+        <ul>
+          <li>1</li>
+          <li>2</li>
+          <li>3</li>
+        </ul>
+      </div>
+    </div>
+    <script>
+      // 虚拟DOM的一个简单的数据结构：
+      class VNode {
+        constructor(tag, data, value, type) {
+          this.tag = tag && tag.toLowerCase(); //当前节点的标签名
+          this.data = data; //当前节点的属性
+          this.value = value; //文本节点的值
+          this.type = type; //当前节点的类型
+          this.children = []; //当前节点的子节点
+        }
+        // 添加子节点
+        appendChild(vnode) {
+          this.children.push(vnode);
+        }
+      }
+
+      // 真实的DOM转换为虚拟DOM：
+      // 这里是模拟DOM元素到抽象语法树的操作，即将DOM元素转换为一个带坑的虚拟DOM
+      function generateVNode(node) {
+        let nodeType = node.nodeType;
+        let _vnode = null;
+        if (nodeType == 1) {
+          var nodeName = node.nodeName;
+          var attributes = node.attributes;
+          var _attributes = {};
+          for (var i = 0; i < attributes.length; i++) {
+            _attributes[attributes[i].nodeName] = attributes[i].nodeValue;
+          }
+          _vnode = new VNode(nodeName, _attributes, undefined, nodeType);
+          var children = node.childNodes;
+          for (var i = 0; i < children.length; i++) {
+            let childVnode = generateVNode(children[i]);
+            _vnode.appendChild(childVnode);
+          }
+        } else if (nodeType == 3) {
+          _vnode = new VNode(undefined, undefined, node.nodeValue, nodeType);
+        }
+        return _vnode;
+      }
+
+      // 获取带有层级的data属性
+      function getValueByPath(data, path) {
+        let paths = path.split(".");
+        let value = data;
+        while (paths.length) {
+          value = value[paths.shift()];
+        }
+        return value;
+      }
+
+      // 将带坑的虚拟DOM转为填充了最新数据的DOM：
+      function combine(vnode, data) {
+        let _vnode = null;
+        let _type = vnode.type;
+        let _data = vnode.data;
+        let _value = vnode.value;
+        let _tag = vnode.tag;
+        let _children = vnode.children;
+        if (_type == 1) {
+          _vnode = new VNode(_tag, _data, _value, _type, _children);
+          _children.forEach((child) => {
+            _vnode.appendChild(combine(child, data));
+          });
+        } else if (_type == 3) {
+          _value = vnode.value.replace(/\{\{(.*?)\}\}/, function (match, $1) {
+            return getValueByPath(data, $1.trim());
+          });
+          _vnode = new VNode(_tag, _data, _value, _type, _children);
+        }
+        return _vnode;
+      }
+
+      // 虚拟DOM转真实的DOM：
+      function parseVNode(vnode) {
+        let node = null;
+        if (vnode.type == 1) {
+          // 创建元素节点
+          node = document.createElement(vnode.tag);
+          // 设置当前节点的属性
+          for (var i in vnode.data) {
+            if (vnode.data.hasOwnProperty(i)) {
+              node.setAttribute(i, vnode.data[i]);
+            }
+          }
+          //   设置当前节点的子节点：
+          let children = vnode.children;
+          for (var i = 0; i < children.length; i++) {
+            var childNode = parseVNode(children[i]);
+            node.appendChild(childNode);
+          }
+        } else if (vnode.type == 3) {
+          // 文本节点：
+          node = document.createTextNode(vnode.value);
+        }
+        return node;
+      }
+
+      function VueLiu(options) {
+        this._data = options.data;
+        this._template = document.querySelector(options.el); //vue中这里是字符串，这里模拟为DOM元素
+
+        this.mount();
+      }
+      VueLiu.prototype.mount = function () {
+        //   默认情况下，如果options中没有提供render,则使用模板来生成这个render，这里相当于挖个坑，可以用来处理自己提供的render
+        this.render = this.createRenderFn(); //利用柯里化的得到一个render函数
+        // this.render.call(this);
+        this.mountComponent();
+      };
+
+      //   mountComponent函数的作用：拿到render函数返回的结果，然后挂载到页面中
+      VueLiu.prototype.mountComponent = function () {
+        //   这里之所以不直接调用update方法，是挖了个坑，因为vue中所有的响应式变化都是交给watcher来处理的
+        let mount = () => {
+          this.update(this.render()); //将虚拟DOM挂载到页面中
+        };
+        mount.call(this);
+      };
+
+      //   createRenderFn函数的作用：缓存抽象语法树（柯里化），得到一个render函数
+      VueLiu.prototype.createRenderFn = function () {
+        // 模拟实现：这里使用虚拟DOM来模拟抽象语法树，两者是一一对应的关系
+        let ast = generateVNode(this._template); //得到一个原始的带坑的虚拟DOM
+
+        //   render函数的作用是：将抽象语法树与最新的数据结合，生成一个新的虚拟DOM
+        // 模拟实现：带坑的VNode与data结合得到一个新的VNode
+        return function render() {
+          // 将最新的数据与ast进行结合
+          let _tmp = combine(ast, this._data);
+          return _tmp;
+        };
+      };
+
+      //   update方法的作用：将虚拟DOM渲染到页面中，这一过程牵扯到diff算法
+      VueLiu.prototype.update = function (vnode) {
+        //   简化，直接将生成的新的虚拟DOM替换到页面中
+        let realDom = parseVNode(vnode);
+        this._template.parentNode.replaceChild(realDom, this._template);
+      };
+
+      let vueliu = new VueLiu({
+        el: "#app",
+        data: {
+          name: "liu",
+          age: 21,
+          gender: 1,
+        },
+      });
+      vueliu._data = {
+        name: "liu2",
+        age: 21,
+        gender: 0,
+      };
+      vueliu._template = document.querySelector("#app");
+      vueliu.mountComponent();
+    </script>
+  </body>
+</html>

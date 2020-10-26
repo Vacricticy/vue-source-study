@@ -29,7 +29,7 @@
       class VNode {
         constructor(tag, data, value, type) {
           this.tag = tag && tag.toLowerCase(); //当前节点的标签名
-          this.date = data; //当前节点的属性
+          this.data = data; //当前节点的属性
           this.value = value; //文本节点的值
           this.type = type; //当前节点的类型
           this.children = []; //当前节点的子节点
@@ -80,9 +80,9 @@
           // 创建元素节点
           node = document.createElement(vnode.tag);
           // 设置当前节点的属性
-          for (var i in vnode.VNode) {
-            if (data.hasOwnProperty(i)) {
-              node.setAttribute(i, data[i]);
+          for (var i in vnode.data) {
+            if (vnode.data.hasOwnProperty(i)) {
+              node.setAttribute(i, vnode.data[i]);
             }
           }
           //   设置当前节点的子节点：
