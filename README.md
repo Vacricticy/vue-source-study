@@ -334,13 +334,17 @@ console.log(isHTMLTag("img")); //true
 
 #### 5.vue中render函数的柯里化优化
 
-
-
-
-
 Vue 本质上是使用 HTML 的字符串作为模板的, 将字符串的 模板 转换为 AST, 再转换为 VNode.
 
 - 模板 -> AST（最消耗性能，需要用到后缀表达式和栈结构）
 - AST -> VNode
 - VNode -> DOM
+
+
+
+实际情况下，模板是不变的，所以AST是不变的
+
+所以当数据改变的时候，我们应该提前将AST缓存起来，然后再根据最新的数据和缓存的AST生成新的虚拟DOM，通过diff算法将新的虚拟DOM与旧的虚拟DOM进行比较，
+
+然后再将虚拟DOM转换为真正的DOM
 

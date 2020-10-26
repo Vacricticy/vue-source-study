@@ -19,23 +19,33 @@
       </div>
     </div>
     <script>
-      // 虚拟DOM的一个简单的数据结构：
+      // 原vue:
+      // 1.根据HTML字符串生成抽象语法树，
+      // 2.将抽象语法树跟数据结合，生成一个新的虚拟DOM
+      // 3.最后将虚拟DOM与原来的虚拟DOM进行diff比较，最后将虚拟DOM添加在页面上
+
+      // 麻烦点：根据HTML字符串生成抽象语法树这一过程比较麻烦，其中牵扯到后缀表达式和栈结构的使用，所以这里通过模拟来实现这一过程
+
+      // 具体的模拟实现：
+      // 1.根据DOM根节点生成一个虚拟DOM，由于这个虚拟DOM与AST是一一对应的关系，所以可以用来代替它。
+      // 2.将原虚拟DOM与data数据结合，生成一个新的虚拟DOM
+      // 3.将新的虚拟DOM替换到页面中
+
+      // base1:虚拟DOM的数据结构
       class VNode {
         constructor(tag, data, value, type) {
-          this.tag = tag && tag.toLowerCase(); //当前节点的标签名
-          this.data = data; //当前节点的属性
-          this.value = value; //文本节点的值
-          this.type = type; //当前节点的类型
-          this.children = []; //当前节点的子节点
+          this.tag = tag && tag.toLowerCase();
+          this.data = data;
+          this.value = value;
+          this.type = type;
+          this.children = [];
         }
-        // 添加子节点
         appendChild(vnode) {
           this.children.push(vnode);
         }
       }
 
-      // 真实的DOM转换为虚拟DOM：
-      // 这里是模拟DOM元素到抽象语法树的操作，即将DOM元素转换为一个带坑的虚拟DOM
+      // base2:真实的DOM转换为虚拟DOM：
       function generateVNode(node) {
         let nodeType = node.nodeType;
         let _vnode = null;
@@ -58,7 +68,7 @@
         return _vnode;
       }
 
-      // 获取带有层级的data属性
+      // base3:获取带有层级的data属性
       function getValueByPath(data, path) {
         let paths = path.split(".");
         let value = data;
@@ -68,7 +78,7 @@
         return value;
       }
 
-      // 将带坑的虚拟DOM转为填充了最新数据的DOM：
+      // base4:将带坑的虚拟DOM转为填充了最新数据的DOM：
       function combine(vnode, data) {
         let _vnode = null;
         let _type = vnode.type;
@@ -90,26 +100,22 @@
         return _vnode;
       }
 
-      // 虚拟DOM转真实的DOM：
+      // base5:虚拟DOM转真实的DOM：
       function parseVNode(vnode) {
         let node = null;
         if (vnode.type == 1) {
-          // 创建元素节点
           node = document.createElement(vnode.tag);
-          // 设置当前节点的属性
           for (var i in vnode.data) {
             if (vnode.data.hasOwnProperty(i)) {
               node.setAttribute(i, vnode.data[i]);
             }
           }
-          //   设置当前节点的子节点：
           let children = vnode.children;
           for (var i = 0; i < children.length; i++) {
             var childNode = parseVNode(children[i]);
             node.appendChild(childNode);
           }
         } else if (vnode.type == 3) {
-          // 文本节点：
           node = document.createTextNode(vnode.value);
         }
         return node;
@@ -117,30 +123,18 @@
 
       function VueLiu(options) {
         this._data = options.data;
-        this._template = document.querySelector(options.el); //vue中这里是字符串，这里模拟为DOM元素
-
+        this._template = document.querySelector(options.el); //vue中这里本应是HTML字符串，用于后面生成抽象语法树，但抽象语法树不是这么轻易就能得到的，所以这里模拟实现时需将其替换为一个dom根元素，然后后续根据这个根元素得到其虚拟DOM，进而代替抽象语法树
         this.mount();
       }
       VueLiu.prototype.mount = function () {
-        //   默认情况下，如果options中没有提供render,则使用模板来生成这个render，这里相当于挖个坑，可以用来处理自己提供的render
-        this.render = this.createRenderFn(); //利用柯里化的得到一个render函数
-        // this.render.call(this);
+        //默认情况下，如果options中没有提供render,则使用原HTML模板来生成这个render，这里相当于留了一笔，后续可以使用自己的render
+        this.render = this.createRenderFn(); //得到一个render函数
         this.mountComponent();
       };
 
-      //   mountComponent函数的作用：拿到render函数返回的结果，然后挂载到页面中
-      VueLiu.prototype.mountComponent = function () {
-        //   这里之所以不直接调用update方法，是挖了个坑，因为vue中所有的响应式变化都是交给watcher来处理的
-        let mount = () => {
-          this.update(this.render()); //将虚拟DOM挂载到页面中
-        };
-        mount.call(this);
-      };
-
-      //   createRenderFn函数的作用：缓存抽象语法树（柯里化），得到一个render函数
+      //   createRenderFn函数的作用：缓存抽象语法树（柯里化），并返回一个用于生成带有数据的虚拟DOM的render函数
       VueLiu.prototype.createRenderFn = function () {
-        // 模拟实现：这里使用虚拟DOM来模拟抽象语法树，两者是一一对应的关系
-        let ast = generateVNode(this._template); //得到一个原始的带坑的虚拟DOM
+        let ast = generateVNode(this._template); //由根元素得到一个原始的虚拟DOM
 
         //   render函数的作用是：将抽象语法树与最新的数据结合，生成一个新的虚拟DOM
         // 模拟实现：带坑的VNode与data结合得到一个新的VNode
@@ -149,13 +143,23 @@
           let _tmp = combine(ast, this._data);
           return _tmp;
         };
+        // 之后每次调用这个render函数来生成最新的虚拟DOM时，所依赖的原虚拟DOM是存在于闭包中的，这样就不会每次都单独生成一个没有必要重复的原始虚拟DOM（对应在vue中其实是AST），所以这样可以大大的减少代码的解析量，提高执行速度
+      };
+
+      //   mountComponent函数的作用：拿到render函数返回的虚拟DOM，然后挂载到页面中
+      VueLiu.prototype.mountComponent = function () {
+        //   这里之所以不直接调用update方法，是挖了个坑，因为vue中所有的响应式变化都是交给watcher来处理的
+        let mount = () => {
+          this.update(this.render()); //将虚拟DOM挂载到页面中
+        };
+        mount.call(this);
       };
 
       //   update方法的作用：将虚拟DOM渲染到页面中，这一过程牵扯到diff算法
       VueLiu.prototype.update = function (vnode) {
         //   简化，直接将生成的新的虚拟DOM替换到页面中
-        let realDom = parseVNode(vnode);
-        this._template.parentNode.replaceChild(realDom, this._template);
+        let realDom = parseVNode(vnode); //由于虚拟DOM转换为真实的DOM
+        this._template.parentNode.replaceChild(realDom, this._template); //替换掉原来的DOM
       };
 
       let vueliu = new VueLiu({
@@ -166,6 +170,7 @@
           gender: 1,
         },
       });
+      // 模拟data数据的改变
       vueliu._data = {
         name: "liu2",
         age: 21,

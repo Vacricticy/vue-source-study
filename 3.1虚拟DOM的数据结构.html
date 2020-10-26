@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      // 什么是虚拟DOM：在内存中通过js对象来描述的一个dom结构
+      // 在Vue实例中，可以通过._vnode属性打印虚拟DOM
+
+      class VNode {
+        constructor(tag, data, value, type) {
+          this.tag = tag && tag.toLowerCase(); //当前节点的标签名
+          this.data = data; //当前节点的属性
+          this.value = value; //文本节点的值
+          this.type = type; //当前节点的类型
+          this.children = []; //当前节点的子节点
+        }
+        // 添加子节点
+        appendChild(vnode) {
+          this.children.push(vnode);
+        }
+      }
+    </script>
+  </body>
+</html>

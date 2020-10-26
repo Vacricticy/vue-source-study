@@ -19,59 +19,42 @@
         </ul>
       </div>
     </div>
-    <!-- 什么是虚拟DOM：在内存中通过js对象来描述的一个dom结构
-
-        在Vue实例中，可以通过._vnode属性打印虚拟DOM
-    
-    -->
     <script>
-      // 虚拟DOM的一个简单的数据结构：
       class VNode {
         constructor(tag, data, value, type) {
-          this.tag = tag && tag.toLowerCase(); //当前节点的标签名
-          this.data = data; //当前节点的属性
-          this.value = value; //文本节点的值
-          this.type = type; //当前节点的类型
-          this.children = []; //当前节点的子节点
+          this.tag = tag && tag.toLowerCase();
+          this.data = data;
+          this.value = value;
+          this.type = type;
+          this.children = [];
         }
-        // 添加子节点
         appendChild(vnode) {
           this.children.push(vnode);
         }
       }
 
-      //   使用递归的方式生成虚拟DOM：
-      //   Vue实际是采用栈+递归来实现的
-      //   实际上是将dom元素生成一个字符串，然后再得到抽象语法树，再将其转换为一棵虚拟DOM？？？？
+      //   真实的DOM转换为虚拟DOM：
       function generateVNode(node) {
-        // 获取节点的类型：
         let nodeType = node.nodeType;
-        let _vnode = null; //根据实际dom生成的虚拟DOM
+        let _vnode = null;
         if (nodeType == 1) {
-          // 元素节点：
           var nodeName = node.nodeName;
-          var attributes = node.attributes; //获取节点所有的属性节点
-          var _attributes = {}; //以为键值对的形式存储所有的属性
+          var attributes = node.attributes;
+          var _attributes = {};
           for (var i = 0; i < attributes.length; i++) {
             _attributes[attributes[i].nodeName] = attributes[i].nodeValue;
           }
           _vnode = new VNode(nodeName, _attributes, undefined, nodeType);
-          //   获取当前节点的子节点
           var children = node.childNodes;
-          //   以此将每一个子节点转换为虚拟的DOM，并添加在父节点的children属性中
           for (var i = 0; i < children.length; i++) {
             let childVnode = generateVNode(children[i]);
             _vnode.appendChild(childVnode);
           }
         } else if (nodeType == 3) {
-          // 文本节点：
           _vnode = new VNode(undefined, undefined, node.nodeValue, nodeType);
         }
         return _vnode;
       }
-
-      let vnode = generateVNode(app);
-      console.log(vnode);
 
       //   将虚拟DOM转换为真正的DOM：
       function parseVNode(vnode) {
@@ -97,6 +80,8 @@
         }
         return node;
       }
+
+      let vnode = generateVNode(app);
       let trueDOM = parseVNode(vnode);
       console.log(trueDOM);
       document.body.appendChild(trueDOM);

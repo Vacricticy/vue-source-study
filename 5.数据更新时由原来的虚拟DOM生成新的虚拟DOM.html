@@ -66,7 +66,7 @@
         return _vnode;
       }
 
-      // 核心：将带坑的虚拟DOM转为填充了最新数据的DOM：
+      // 核心：将带坑的虚拟DOM转为填充了最新数据的虚拟DOM：
       function combine(vnode, data) {
         let _vnode = null; //新的虚拟DOM
         let _type = vnode.type;
@@ -89,6 +89,7 @@
         }
         return _vnode;
       }
+
       let vnode = generateVNode(app);
       console.log(vnode);
       let newVnode = combine(vnode, {

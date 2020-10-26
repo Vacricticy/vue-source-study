@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="./src/vue.js"></script>
+  </head>
+  <body>
+    <div id="app" class="div1">
+      <div class="box">
+        <div class="div1">hello1</div>
+        <div class="div2">hello2</div>
+        <div class="div3">hello3</div>
+        <ul>
+          <li>1</li>
+          <li>2</li>
+          <li>3</li>
+        </ul>
+      </div>
+    </div>
+    <script>
+      class VNode {
+        constructor(tag, data, value, type) {
+          this.tag = tag && tag.toLowerCase();
+          this.data = data;
+          this.value = value;
+          this.type = type;
+          this.children = [];
+        }
+        appendChild(vnode) {
+          this.children.push(vnode);
+        }
+      }
+
+      //   真实的DOM转换为虚拟DOM：
+      function generateVNode(node) {
+        // 获取节点的类型：
+        let nodeType = node.nodeType;
+        let _vnode = null; //根据实际dom生成的虚拟DOM
+        if (nodeType == 1) {
+          // 元素节点：
+          var nodeName = node.nodeName;
+          var attributes = node.attributes; //获取节点所有的属性节点
+          var _attributes = {}; //以为键值对的形式存储所有的属性
+          for (var i = 0; i < attributes.length; i++) {
+            _attributes[attributes[i].nodeName] = attributes[i].nodeValue;
+          }
+          _vnode = new VNode(nodeName, _attributes, undefined, nodeType);
+          //   获取当前节点的子节点
+          var children = node.childNodes;
+          //   以此将每一个子节点转换为虚拟的DOM，并添加在父节点的children属性中
+          for (var i = 0; i < children.length; i++) {
+            let childVnode = generateVNode(children[i]);
+            _vnode.appendChild(childVnode);
+          }
+        } else if (nodeType == 3) {
+          // 文本节点：
+          _vnode = new VNode(undefined, undefined, node.nodeValue, nodeType);
+        }
+        return _vnode;
+      }
+
+      let vnode = generateVNode(app);
+      console.log(vnode);
+    </script>
+  </body>
+</html>
