@@ -20,7 +20,7 @@
     </div>
     <script>
       // 原vue:
-      // 1.根据HTML字符串生成抽象语法树，
+      // 1.根据HTML字符串生成抽象语法树(这一过程称为编译compiler)
       // 2.将抽象语法树跟数据结合，生成一个新的虚拟DOM
       // 3.最后将虚拟DOM与原来的虚拟DOM进行diff比较，最后将虚拟DOM添加在页面上
 
@@ -127,7 +127,8 @@
         this.mount();
       }
       VueLiu.prototype.mount = function () {
-        //默认情况下，如果options中没有提供render,则使用原HTML模板来生成这个render，这里相当于留了一笔，后续可以使用自己的render
+        //默认情况下，如果options中没有提供render,则使用原render函数将HTML模板生成一个待渲染的虚拟DOM
+        //这里相当于留了一笔，如果提供了render函数，则直接使用render函数返回的DOM作为待渲染的DOM
         this.render = this.createRenderFn(); //得到一个render函数
         this.mountComponent();
       };
@@ -148,14 +149,15 @@
 
       //   mountComponent函数的作用：拿到render函数返回的虚拟DOM，然后挂载到页面中
       VueLiu.prototype.mountComponent = function () {
-        //   这里之所以不直接调用update方法，是挖了个坑，因为vue中所有的响应式变化都是交给watcher来处理的
+        //   这里之所以不直接调用update方法，是留了一笔，因为vue中所有的响应式变化都是交给watcher来处理的
         let mount = () => {
           this.update(this.render()); //将虚拟DOM挂载到页面中
         };
-        mount.call(this);
+        // mount.call(this);
+        mount.call();
       };
 
-      //   update方法的作用：将虚拟DOM渲染到页面中，这一过程牵扯到diff算法
+      //   update方法的作用：将带有数据的虚拟DOM加到页面中，这一过程牵扯到diff算法
       VueLiu.prototype.update = function (vnode) {
         //   简化，直接将生成的新的虚拟DOM替换到页面中
         let realDom = parseVNode(vnode); //由于虚拟DOM转换为真实的DOM
