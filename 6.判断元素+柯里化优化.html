@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <!-- 
+
+        需求：判断一个标签名是否为内置的标签
+     -->
+    <script>
+      // 原始方法： 时间复杂度：O(n)
+      //   let tags = "div,p,a,img,ul,li".split(",");
+      //   function isHTMLTag(tagName) {
+      //     tagName = tagName.toLowerCase();
+      //     if (tags.indexOf(tagName) > -1) return true;
+      //     return false;
+      //   }
+
+      //   柯里化优化：时间复杂度：O(1)
+      let tags = "div,p,a,img,ul,li".split(",");
+      function makeMap(keys) {
+        var set = {};
+        tags.forEach((key) => {
+          set[key] = true;
+        });
+        return function (tagName) {
+          return !!set[tagName]; //这里!!的作用时可以将undefined转换为false
+        };
+      }
+      let isHTMLTag = makeMap(tags);
+      console.log(isHTMLTag("user")); //false
+      console.log(isHTMLTag("img")); //true
+    </script>
+  </body>
+</html>

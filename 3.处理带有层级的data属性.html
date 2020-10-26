@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="./src/vue.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <h1>{{info.name}}</h1>
+      <h1>{{info.age}}</h1>
+    </div>
+    <script>
+      // 根据字符串路径获取对象中的某个数据
+      // 核心：一层一层的获取，直到最后一层
+      function getValueByPath(data, path) {
+        //   path: info.name
+        let paths = path.split("."); //[info,name]
+        let value = data;
+        while (paths.length) {
+          value = value[paths.shift()];
+        }
+        return value;
+      }
+      let regExp = /\{\{(.+?)\}\}/g;
+      function compiler(node, data) {
+        let childNodes = node.childNodes;
+        for (var i = 0; i < childNodes.length; i++) {
+          let type = childNodes[i].nodeType;
+          if (type == 3) {
+            var text = childNodes[i].nodeValue.replace(regExp, function (
+              match,
+              $1
+            ) {
+              //   return data[$1.trim()];
+              return getValueByPath(data, $1.trim());
+            });
+            childNodes[i].nodeValue = text;
+          } else if (type == 1) {
+            compiler(childNodes[i], data);
+          }
+        }
+      }
+      function VueLiu(options) {
+        this._data = options.data;
+        this._el = options.el;
+        this.$el = this._templateDOM = document.querySelector(this._el);
+        this.render();
+      }
+      VueLiu.prototype.render = function () {
+        this.compiler();
+      };
+      VueLiu.prototype.compiler = function () {
+        let realHTMLDOM = this._templateDOM.cloneNode(true);
+        compiler(realHTMLDOM, this._data);
+        this.update(realHTMLDOM);
+      };
+      VueLiu.prototype.update = function (realHTMLDOM) {
+        this._templateDOM.parentNode.replaceChild(
+          realHTMLDOM,
+          this._templateDOM
+        );
+      };
+      new VueLiu({
+        el: "#app",
+        data: {
+          info: {
+            name: "liu",
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

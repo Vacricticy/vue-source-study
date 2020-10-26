@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="./src/vue.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      {{name}}
+      <h1>{{age}}</h1>
+    </div>
+    <script>
+      let regExp = /\{\{(.+?)\}\}/g;
+      function compiler(node, data) {
+        let childNodes = node.childNodes;
+        for (var i = 0; i < childNodes.length; i++) {
+          let type = childNodes[i].nodeType;
+          if (type == 3) {
+            var text = childNodes[i].nodeValue.replace(regExp, function (
+              match,
+              $1
+            ) {
+              return data[$1.trim()];
+            });
+            childNodes[i].nodeValue = text;
+          } else if (type == 1) {
+            compiler(childNodes[i], data);
+          }
+        }
+      }
+      function VueLiu(options) {
+        // 内部的数据使用下划线 开头, 只读数据使用 $ 开头
+        this._data = options.data;
+        this._el = options.el;
+        this.$el = this._templateDOM = document.querySelector(this._el);
+        // 渲染工作：
+        this.render();
+      }
+      //   将数据与模板结合，然后再添加到页面中
+      VueLiu.prototype.render = function () {
+        this.compiler();
+      };
+      //   将数据与模板结合
+      VueLiu.prototype.compiler = function () {
+        let realHTMLDOM = this._templateDOM.cloneNode(true);
+        compiler(realHTMLDOM, this._data);
+        this.update(realHTMLDOM);
+      };
+      //   将DOM元素放在页面上
+      VueLiu.prototype.update = function (realHTMLDOM) {
+        this._templateDOM.parentNode.replaceChild(
+          realHTMLDOM,
+          this._templateDOM
+        );
+      };
+      new VueLiu({
+        el: "#app",
+        data: {
+          name: "liu",
+          age: 21,
+        },
+      });
+    </script>
+  </body>
+</html>
