@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      //   之前的方案中因为只监听了数组以及数组成员的赋值操作，没有监听调用数组方法时的操作，所以在调用push,pop方法时，没办法实现响应式
+
+      /* 解决方案：
+      
+        1.当改变数组的时候，需要发出通知
+            vue2的缺陷：当数组发送改变时，设置Length属性没办法通知？？？（vue3中使用Proxy解决了这个问题）
+        2.数组加入的新元素需要将其也变为响应式的
+      
+
+      响应式化的几个阶段：
+        1.首先需要将初始的数据递归进行响应式化
+        2.当数据为数组时，除了对每一个元素进行响应式化外，还需要对数组的方法进行响应式处理（即新添加的元素需要响应式化）
+          这里的参数又需要判断一下：
+            若为引用数据类型，则需要递归响应式化
+            若为值类型，则判断方法为push还是unshift，依次来进行具体的响应式化
+        3.当在改变一个属性的值时，若这个值为引用数据类型，需要将其递归响应式化
+       */
+      let obj = {
+        info: {
+          name: "liu",
+          age: 21,
+        },
+        hobby: ["music", "swim"],
+      };
+      // 拦截数组的方法，对数组的方法进行响应式处理
+      let ARRAY_METHODS = [
+        "push",
+        "pop",
+        "shift",
+        "unshift",
+        "reverse",
+        "sort",
+      ];
+      let tmpObj = {};
+      ARRAY_METHODS.forEach((method) => {
+        tmpObj[method] = function () {
+          console.log(`这里调用的是${method}方法，可以在这里添加额外的操作`);
+          // 先执行原方法，再将添加后的元素设置为响应式的
+          let rs = Array.prototype[method].apply(this, arguments);
+          // 将传入的参数变为响应式的
+          for (var i = 0; i < arguments.length; i++) {
+            if (typeof arguments[i] == "object") {
+              reactify(arguments[i]);
+            } else {
+              if (method == "push") {
+                defineReactive(this, this.length - 1, arguments[i]);
+              }
+              if (method == "unshift") {
+                defineReactive(this, 0, arguments[i]);
+              }
+            }
+          }
+          return rs;
+        };
+      });
+      // 将值类型的数据响应式化
+      function defineReactive(target, key, value) {
+        Object.defineProperty(target, key, {
+          enumerable: true,
+          get() {
+            console.log(`${key}的值为${value}`);
+            return value;
+          },
+          set(newVal) {
+            value = newVal;
+            // 如果重新赋值的是一个引用数据类型，则需要递归将里面的数据变为响应式的
+            if (typeof newVal == "object") {
+              reactify(newVal);
+            }
+            console.log(`重新设置的${key}为${value}`);
+          },
+        });
+      }
+      // 递归进行响应式化
+      function reactify(data) {
+        let keys = Object.keys(data);
+
+        for (var i = 0; i < keys.length; i++) {
+          let key = keys[i];
+          let value = data[key];
+          if (typeof value == "object") {
+            // 将引用数据类型本身进行响应式化
+            defineReactive(data, key, value);
+            // 将引用数据类型内部的属性递归进行响应式化
+            reactify(value);
+            // 如果是数组类型，需要将该数组的方法进行响应式处理
+            if (Array.isArray(value)) {
+              value.__proto__ = tmpObj;
+            }
+          } else {
+            defineReactive(data, key, value);
+          }
+        }
+      }
+      reactify(obj);
+      obj.info.name = "liu2";
+      obj.info.age;
+      // debugger;
+      obj.hobby.push("photo1");
+      obj.hobby.push({ hobby2: "photo2" });
+      obj.hobby.unshift("balabala");
+      obj.hobby = ["one"];
+      console.log(obj);
+      // obj.hobby[2];
+    </script>
+  </body>
+</html>

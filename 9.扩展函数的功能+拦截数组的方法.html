@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      // 展开函数的三大步：
+      /*   
+      function fn1() {
+        console.log("这是原来函数的功能");
+      }
+      //   1.使用临时的函数名称存储函数
+      let _tmpfn1 = fn1;
+      //   2.定义函数的扩展功能
+      fn1 = function () {
+        //   3.调用临时的函数，即拿到原来函数的结果
+        _tmpfn1();
+        console.log("这是扩展的函数功能");
+      };
+      fn1(); 
+      */
+
+      let arr = [];
+      // 拦截数组方法：将数组的原型指向一个新的对象，这个对象上拥有数组的所有方法，在调用某个方法时，实际调用的是该对象上的方法，在该方法的内部会去调用原来的方法，更重要的是可以添加自己的操作。
+      let ARRAY_METHODS = [
+        "push",
+        "pop",
+        "shift",
+        "unshift",
+        "reverse",
+        "sort",
+      ];
+      // let tmpObj=Object.create(Array.prototype);//创建一个新对象，将其原型指向Array的原型
+      let tmpObj = {};
+      ARRAY_METHODS.forEach((method) => {
+        tmpObj[method] = function () {
+          console.log(`这里调用的是${method}方法，可以在这里添加额外的操作`);
+          return Array.prototype[method].apply(this, arguments);
+        };
+      });
+      arr.__proto__ = tmpObj;
+      arr.push(1);
+      arr.push(2);
+      console.log(arr);
+      arr.shift();
+      console.log(arr);
+    </script>
+  </body>
+</html>
