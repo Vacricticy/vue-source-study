@@ -126,9 +126,12 @@
         this._template = document.querySelector(options.el); //vue中这里本应是HTML字符串，用于后面生成抽象语法树，但抽象语法树不是这么轻易就能得到的，所以这里模拟实现时需将其替换为一个dom根元素，然后后续根据这个根元素得到其虚拟DOM，进而代替抽象语法树
         this.mount();
       }
+      // 初次挂载
       VueLiu.prototype.mount = function () {
         //默认情况下，如果options中没有提供render,则使用原render函数将HTML模板生成一个待渲染的虚拟DOM
         //这里相当于留了一笔，如果提供了render函数，则直接使用render函数返回的DOM作为待渲染的DOM
+
+        // 初次挂载需要在内存中缓存一个render函数，用于得到最原始的虚拟DOM，这里就不用再每次数据改变时重复获取原始的虚拟DOM
         this.render = this.createRenderFn(); //得到一个render函数
         this.mountComponent();
       };
@@ -161,7 +164,10 @@
       VueLiu.prototype.update = function (vnode) {
         //   简化，直接将生成的新的虚拟DOM替换到页面中
         let realDom = parseVNode(vnode); //由于虚拟DOM转换为真实的DOM
-        this._template.parentNode.replaceChild(realDom, this._template); //替换掉原来的DOM
+        this._template.parentNode.replaceChild(realDom, this._template); //替换掉原来的DOM。 vue源码中是通过diff算法实现的局部替换，性能要比这里高得多。
+
+        // 将原来的模板替换为新的DOM后，需要将_template指向新的DOM
+        this._template = realDom;
       };
 
       let vueliu = new VueLiu({

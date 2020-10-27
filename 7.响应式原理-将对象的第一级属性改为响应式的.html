@@ -8,17 +8,20 @@
   <body>
     <script>
       /*
-              VUE2.0响应式原理的实现：
-              Object.defineProperty(obj,prop,{
-                get(){
+        什么叫做响应式：就是当一个数据改变时，你能检测到这个值的改变，并执行相关的操作
 
-                },
-                set(value){
+        VUE2.0响应式原理的实现：
+        （其核心原理其实就是闭包，即将每一个属性的值都通过闭包缓存起来，get时从缓存取，set时修改缓存的值）
+        Object.defineProperty(obj,prop,{
+          get(){
 
-                }
-              })
+          },
+          set(value){
 
-             */
+          }
+        })
+
+      */
       let obj = {
         name: "liu",
         age: 21,

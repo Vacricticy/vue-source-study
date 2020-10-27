@@ -109,11 +109,89 @@
         return node;
       }
 
+      // --------------响应式处理部分 开始-----------------
+
+      // 拦截数组的方法，对数组的方法进行响应式处理
+      let ARRAY_METHODS = [
+        "push",
+        "pop",
+        "shift",
+        "unshift",
+        "reverse",
+        "sort",
+      ];
+      let tmpObj = {};
+      ARRAY_METHODS.forEach((method) => {
+        tmpObj[method] = function () {
+          console.log(`这里调用的是${method}方法，可以在这里添加额外的操作`);
+          let rs = Array.prototype[method].apply(this, arguments);
+          for (var i = 0; i < arguments.length; i++) {
+            if (typeof arguments[i] == "object") {
+              reactify(arguments[i]);
+            } else {
+              if (method == "push") {
+                defineReactive(this, this.length - 1, arguments[i]);
+              }
+              if (method == "unshift") {
+                defineReactive(this, 0, arguments[i]);
+              }
+            }
+          }
+          return rs;
+        };
+      });
+
+      // 将值类型的数据响应式化
+      function defineReactive(target, key, value) {
+        Object.defineProperty(target, key, {
+          enumerable: true,
+          get() {
+            console.log(`${key}的值为${value}`);
+            return value;
+          },
+          set(newVal) {
+            value = newVal;
+            if (typeof newVal == "object") {
+              reactify(newVal);
+            }
+            console.log(`重新设置的${key}为${value}`);
+
+            // 核心重点（将属性变为响应式的目的所在）：
+            // 1.即自动将最新的数据与虚拟DOM结合，生成新的虚拟DOM------render函数需要处理的事情
+            // 2.然后生成真实的DOM，最后挂在到页面上-------update函数需要处理的事情
+            vueliu.mountComponent();
+          },
+        });
+      }
+
+      // 递归进行响应式化
+      function reactify(data) {
+        let keys = Object.keys(data);
+
+        for (var i = 0; i < keys.length; i++) {
+          let key = keys[i];
+          let value = data[key];
+          if (typeof value == "object") {
+            defineReactive(data, key, value);
+            reactify(value);
+            if (Array.isArray(value)) {
+              value.__proto__ = tmpObj;
+            }
+          } else {
+            defineReactive(data, key, value);
+          }
+        }
+      }
+
+      // --------------响应式处理部分 结束-----------------
+
       function VueLiu(options) {
         this._data = options.data;
+        reactify(this._data); //将data数据进行响应式化
         this._template = document.querySelector(options.el);
         this.mount();
       }
+      // 首次挂载
       VueLiu.prototype.mount = function () {
         this.render = this.createRenderFn();
         this.mountComponent();
@@ -121,6 +199,7 @@
 
       VueLiu.prototype.createRenderFn = function () {
         let ast = generateVNode(this._template);
+        console.log(this._template);
 
         return function render() {
           let _tmp = combine(ast, this._data);
@@ -128,6 +207,7 @@
         };
       };
 
+      // 每次数据更新时调用这个函数就可以实现数据到页面的更新
       VueLiu.prototype.mountComponent = function () {
         let mount = () => {
           this.update(this.render());
@@ -138,6 +218,8 @@
       VueLiu.prototype.update = function (vnode) {
         let realDom = parseVNode(vnode);
         this._template.parentNode.replaceChild(realDom, this._template);
+        // 将原来的模板替换为新的DOM后，需要将_template指向新的DOM
+        this._template = realDom;
       };
 
       let vueliu = new VueLiu({
@@ -148,14 +230,9 @@
           gender: 1,
         },
       });
-      // 模拟data数据的改变
-      vueliu._data = {
-        name: "liu2",
-        age: 21,
-        gender: 0,
-      };
-      vueliu._template = document.querySelector("#app");
-      vueliu.mountComponent();
+      vueliu._data.name = "liu2";
+      vueliu._data.age = 22;
+      console.log(vueliu);
     </script>
   </body>
 </html>
