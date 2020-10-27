@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app" class="div1">
+      <div class="box">
+        <div class="div1">{{name}}</div>
+        <div class="div2">{{age}}</div>
+        <div class="div3">{{gender}}</div>
+        <ul>
+          <li>1</li>
+          <li>2</li>
+          <li>3</li>
+        </ul>
+      </div>
+    </div>
+    <script>
+      // base1:虚拟DOM的数据结构
+      class VNode {
+        constructor(tag, data, value, type) {
+          this.tag = tag && tag.toLowerCase();
+          this.data = data;
+          this.value = value;
+          this.type = type;
+          this.children = [];
+        }
+        appendChild(vnode) {
+          this.children.push(vnode);
+        }
+      }
+
+      // base2:真实的DOM转换为虚拟DOM：
+      function generateVNode(node) {
+        let nodeType = node.nodeType;
+        let _vnode = null;
+        if (nodeType == 1) {
+          var nodeName = node.nodeName;
+          var attributes = node.attributes;
+          var _attributes = {};
+          for (var i = 0; i < attributes.length; i++) {
+            _attributes[attributes[i].nodeName] = attributes[i].nodeValue;
+          }
+          _vnode = new VNode(nodeName, _attributes, undefined, nodeType);
+          var children = node.childNodes;
+          for (var i = 0; i < children.length; i++) {
+            let childVnode = generateVNode(children[i]);
+            _vnode.appendChild(childVnode);
+          }
+        } else if (nodeType == 3) {
+          _vnode = new VNode(undefined, undefined, node.nodeValue, nodeType);
+        }
+        return _vnode;
+      }
+
+      // base3:获取带有层级的data属性
+      function getValueByPath(data, path) {
+        let paths = path.split(".");
+        let value = data;
+        while (paths.length) {
+          value = value[paths.shift()];
+        }
+        return value;
+      }
+
+      // base4:将带坑的虚拟DOM转为填充了最新数据的DOM：
+      function combine(vnode, data) {
+        let _vnode = null;
+        let _type = vnode.type;
+        let _data = vnode.data;
+        let _value = vnode.value;
+        let _tag = vnode.tag;
+        let _children = vnode.children;
+        if (_type == 1) {
+          _vnode = new VNode(_tag, _data, _value, _type, _children);
+          _children.forEach((child) => {
+            _vnode.appendChild(combine(child, data));
+          });
+        } else if (_type == 3) {
+          _value = vnode.value.replace(/\{\{(.*?)\}\}/, function (match, $1) {
+            return getValueByPath(data, $1.trim());
+          });
+          _vnode = new VNode(_tag, _data, _value, _type, _children);
+        }
+        return _vnode;
+      }
+
+      // base5:虚拟DOM转真实的DOM：
+      function parseVNode(vnode) {
+        let node = null;
+        if (vnode.type == 1) {
+          node = document.createElement(vnode.tag);
+          for (var i in vnode.data) {
+            if (vnode.data.hasOwnProperty(i)) {
+              node.setAttribute(i, vnode.data[i]);
+            }
+          }
+          let children = vnode.children;
+          for (var i = 0; i < children.length; i++) {
+            var childNode = parseVNode(children[i]);
+            node.appendChild(childNode);
+          }
+        } else if (vnode.type == 3) {
+          node = document.createTextNode(vnode.value);
+        }
+        return node;
+      }
+
+      function VueLiu(options) {
+        this._data = options.data;
+        this._template = document.querySelector(options.el);
+        this.mount();
+      }
+      VueLiu.prototype.mount = function () {
+        this.render = this.createRenderFn();
+        this.mountComponent();
+      };
+
+      VueLiu.prototype.createRenderFn = function () {
+        let ast = generateVNode(this._template);
+
+        return function render() {
+          let _tmp = combine(ast, this._data);
+          return _tmp;
+        };
+      };
+
+      VueLiu.prototype.mountComponent = function () {
+        let mount = () => {
+          this.update(this.render());
+        };
+        mount.call();
+      };
+
+      VueLiu.prototype.update = function (vnode) {
+        let realDom = parseVNode(vnode);
+        this._template.parentNode.replaceChild(realDom, this._template);
+      };
+
+      let vueliu = new VueLiu({
+        el: "#app",
+        data: {
+          name: "liu",
+          age: 21,
+          gender: 1,
+        },
+      });
+      // 模拟data数据的改变
+      vueliu._data = {
+        name: "liu2",
+        age: 21,
+        gender: 0,
+      };
+      vueliu._template = document.querySelector("#app");
+      vueliu.mountComponent();
+    </script>
+  </body>
+</html>

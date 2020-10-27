@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      /*
+              VUE2.0响应式原理的实现：
+              Object.defineProperty(obj,prop,{
+                get(){
+
+                },
+                set(value){
+
+                }
+              })
+
+             */
+      let obj = {
+        name: "liu",
+        age: 21,
+        gender: 1,
+        hobby: "music",
+      };
+
+      // 方式一：使用立即执行函数产生闭包
+      /*     
+      let keys = Object.keys(obj);
+      for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        var value = obj[key]; //1.这里必须将值保存起来，因为在defineProperty内部通过obj[key]获取值时会导致无限循环。2.而且必须使用闭包，因为取值和赋值操作是在后续进行的，必须利用闭包缓存每一个变量的值
+        ((key, value) => {
+          Object.defineProperty(obj, key, {
+            enumerable: true,
+            get() {
+              console.log(`${key}的值为${value}`);
+              return value;
+            },
+            set(newVal) {
+              console.log(`重新设置的${key}值为${newVal}`);
+              value = newVal; //这里之所以可以改变原obj中的值，是因为在取值的时候也是直接从闭包中取的，而不是直接取的对象身上的值
+            },
+          });
+        })(key, value);
+      } 
+      */
+
+      // 方式二（vue采用的方式）：直接定义一个外部函数，让内部函数引用外部函数的变量
+      // defineReactive是‘定义响应式’的意思
+      function defineReactive(target, key, value, enumerable) {
+        // 这里的value会一直被get和set引用，所以会一直缓存在内存中
+        Object.defineProperty(target, key, {
+          enumerable: enumerable,
+          get() {
+            console.log(`${key}的值为${value}`);
+            return value; //这里返回的是缓存中的value,而不是直接从原对象身上获取的value。所以在重新修改了缓存中的值后，可以通过这个get获取到最新的值。
+          },
+          set(newVal) {
+            console.log(`重新设置的${key}值为${newVal}`);
+            console.log(typeof value);
+            value = newVal; //这里改变的是缓存中的value
+          },
+        });
+      }
+      let keys = Object.keys(obj);
+      for (var i = 0; i < keys.length; i++) {
+        defineReactive(obj, keys[i], obj[keys[i]], true);
+      }
+      obj.name;
+      obj.age;
+      obj.name = "liu2";
+      console.log(obj);
+    </script>
+  </body>
+</html>
