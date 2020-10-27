@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      //   之前的方案中因为只监听了数组以及数组成员的赋值操作，没有监听调用数组方法时的操作，所以在调用push,pop方法时，没办法实现响应式
+
+      /* 解决方案：
+      
+        1.当改变数组的时候，需要发出通知
+            vue2的缺陷：当数组发送改变时，设置Length属性没办法通知？？？（vue3中使用Proxy解决了这个问题）
+        2.数组加入的新元素需要将其也变为响应式的
+      
+       */
+      let obj = {
+        info: {
+          name: "liu",
+          age: 21,
+        },
+        hobby: ["music", "swim"],
+      };
+
+      function defineReactive(target, key, value) {
+        Object.defineProperty(target, key, {
+          enumerable: true,
+          get() {
+            console.log(`${key}的值为${value}`);
+            return value;
+          },
+          set(newVal) {
+            value = newVal;
+            console.log(`重新设置的${key}为${value}`);
+          },
+        });
+      }
+      function reactify(data) {
+        let keys = Object.keys(data);
+
+        for (var i = 0; i < keys.length; i++) {
+          let key = keys[i];
+          let value = data[key];
+          if (typeof value == "object") {
+            reactify(value);
+          } else {
+            defineReactive(data, key, value);
+          }
+        }
+      }
+      reactify(obj);
+      obj.info.name = "liu2";
+      obj.info.age;
+      //   obj.hobby.push("photo");
+      obj.hobby;
+    </script>
+  </body>
+</html>

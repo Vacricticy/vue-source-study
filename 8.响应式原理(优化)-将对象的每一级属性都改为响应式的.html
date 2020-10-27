@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      let obj = {
+        info: {
+          name: "liu",
+          age: 21,
+        },
+        isMember: false,
+        hobby: ["music", "swim"],
+        lang: "chinese",
+      };
+      function defineReactive(target, key, value) {
+        Object.defineProperty(target, key, {
+          enumerable: true,
+          get() {
+            console.log(`${key}的值为${value}`);
+            return value;
+          },
+          set(newVal) {
+            value = newVal;
+            console.log(`重新设置的${key}为${value}`);
+          },
+        });
+      }
+      // 用于递归的函数
+      function reactify(data) {
+        let keys = Object.keys(data); //获取当前变量的所有属性名
+
+        for (var i = 0; i < keys.length; i++) {
+          let key = keys[i];
+          let value = data[key];
+          // 如果为引用数据类型，就需要进行递归，让其中的每一个元素响应式化
+          if (typeof value == "object") {
+            // 递归之前需要先将其自身响应式化
+            defineReactive(data, key, value);
+            reactify(value);
+          } else {
+            // 为值类型的话，就直接将其响应式化
+            defineReactive(data, key, value);
+          }
+        }
+      }
+      reactify(obj);
+
+      obj.isMember;
+      obj.isMember = true;
+      obj.info.name;
+      // obj.info.name = "liu2";
+      obj.hobby;
+      obj.hobby = ["music2", "swim2"];
+      obj.hobby.push("run"); //这里不是响应式的，因为只监听了数组以及数组成员的赋值操作，没有监听调用数组方法时的操作
+      // obj.hobby[0];
+      // obj.hobby[0] = "music2";
+      // obj.lang;
+      // obj.lang = "english";
+      console.log(obj);
+    </script>
+  </body>
+</html>
