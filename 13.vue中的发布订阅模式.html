@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      /* 
+        ast在与最新的数据结合生成新的虚拟DOM时的时候，会有访问数据这一过程，此时会执行对应数据的get方法。
+        此时会调用depend方法，会将单个组件对应的wather方法存入全局的watcher中。-------这个过程被称为 依赖收集
+        
+        wather函数用于将最新的虚拟DOM更新在页面上
+
+        数据在变更的时候，即执行set方法的过程中，会调用notify方法，将全局wather中对应的watcher一一进行触发，这样可以实现局部更新DOM，提高性能。 -------------这个过程被称为 派发更新
+      */
+    </script>
+  </body>
+</html>

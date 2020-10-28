@@ -18,6 +18,11 @@
         </ul>
       </div>
     </div>
+    <!-- 
+        即原本vue中的数据必须通过_data来访问，
+        但此时我们想要直接通过vue实例.属性名进行访问，
+        所以必须将_data中所有的属性映射到vue实例对象上
+     -->
     <script>
       // base1:虚拟DOM的数据结构
       class VNode {
@@ -155,16 +160,12 @@
               reactify(newVal);
             }
             console.log(`重新设置的${key}为${value}`);
-
-            // 核心重点（将属性变为响应式的目的所在）：
-            // 1.即自动将最新的数据与虚拟DOM结合，生成新的虚拟DOM------render函数需要处理的事情
-            // 2.然后生成真实的DOM，最后挂在到页面上-------update函数需要处理的事情
             vueliu.mountComponent();
           },
         });
       }
 
-      // 递归进行响应式化
+      // 递归进行响应式化，vue中这个函数的函数名为observer
       function reactify(data) {
         let keys = Object.keys(data);
 
@@ -187,8 +188,10 @@
 
       function VueLiu(options) {
         this._data = options.data;
-        reactify(this._data); //将data数据进行响应式化
         this._template = document.querySelector(options.el);
+        // reactify(this._data); //将data数据进行响应式化
+
+        this.initData(this._data); //将data数据响应式化，并进行代理，即操作vue实例对象上的属性时其实代理操作的是vue实例中_data属性上的属性
         this.mount();
       }
       // 首次挂载
@@ -218,16 +221,45 @@
       VueLiu.prototype.update = function (vnode) {
         let realDom = parseVNode(vnode);
         this._template.parentNode.replaceChild(realDom, this._template);
-        // 将原来的模板替换为新的DOM后，需要将_template指向新的DOM
         this._template = realDom;
       };
 
+      /* 
+        target表示vue实例对象
+        key表示直接在veu实例对象上进行访问的键
+        prop表示key对应的值实际存储的地方
+       */
+      function proxy(target, prop, key) {
+        Object.defineProperty(target, key, {
+          enumerable: true,
+          get() {
+            // 表面访问的是target的key属性，实则返回的是target上prop属性中的key属性
+            return target[prop][key];
+          },
+          set(newVal) {
+            // 实例上改变的属性也是target上prop属性上的key属性
+            target[prop][key] = newVal;
+          },
+        });
+      }
+      VueLiu.prototype.initData = function (data) {
+        //   将_data数据进行响应式化，然后实现代理操作
+        // 1.响应式化
+        reactify(data);
+        // 2.代理操作
+        let keys = Object.keys(data);
+        for (var key in keys) {
+          //   将_data中的每一个属性key映射到vue实例对象上
+          proxy(this, "_data", key);
+        }
+      };
       let vueliu = new VueLiu({
         el: "#app",
         data: {
           name: "liu",
           age: 21,
           gender: 1,
+          hobby: ["music", "swim"],
         },
       });
       vueliu._data.name = "liu2";

@@ -4,16 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+    <script src="./src/vue.js"></script>
   </head>
   <body>
-    <ul id="ul">
-      <li><a href="">111</a></li>
-      <li>111</li>
-      <li>111</li>
-      <li>111</li>
-    </ul>
+    <div id="app">{{hobby}}</div>
     <script>
-      console.log(ul.childNodes);
+      let app = new Vue({
+        el: "#app",
+        data: {
+          hobby: ["music"],
+        },
+      });
     </script>
   </body>
 </html>

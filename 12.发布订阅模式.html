@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <!-- 
+        原本的mountComponent方法存在的问题：
+            在进行DOM替换的时候，是直接将整个页面的DOM进行的替换
+        现在的目标：
+            如果修改了属性，就尽可能只更新这些属性对应的页面DOM
+     -->
+    <script>
+      var observer = (() => {
+        var subscribes = {}; //这里以对象的形式存储订阅列表，键表示订阅的类型，值表示该类型对应的订阅列表。
+        return {
+          // 订阅功能
+          subscribe: function (type, handle) {
+            //   将新订阅的处理函数添加到对应的订阅列表中
+            (subscribes[type] || (subscribes[type] = [])).push(handle);
+          },
+          // 发布功能
+          publish: function (type) {
+            //   获取传入的参数
+            var args = Array.prototype.slice.call(arguments, 1);
+            var subs = subscribes[type];
+            if (!subs) {
+              return;
+            }
+            // 指向该订阅类型下对应的所有处理函数
+            for (var i = 0; i < subs.length; i++) {
+              subs[i].apply(null, args);
+            }
+          },
+          // 取消功能
+          cancel: function (type, handle) {
+            //   没有传参表示删除所有的订阅处理函数
+            if (arguments.length == 0) {
+              subscribes = {};
+            } else if (arguments.length == 1) {
+              // 如果只传入了一个参数，则将该类型下的所有处理函数都删除掉
+              subscribes[type] = [];
+            } else if (arguments.length == 2) {
+              // 如果传入了两个参数，则表示删除该类型下指定的处理函数
+              handles = subscribes[type];
+              for (var i = 0; i < handles.length; i++) {
+                if (handles[i] === handle) {
+                  handles.splice(i, 1);
+                  i--;
+                }
+              }
+            }
+          },
+          getSubscribes: function () {
+            return subscribes;
+          },
+        };
+      })();
+      function fn1(info1, info2) {
+        console.log(`info1的消息为${info1}，info2的消息为${info2}`);
+      }
+      function fn2() {}
+      observer.subscribe("click", fn1);
+      observer.subscribe("click", fn2);
+      observer.subscribe("click", fn1);
+      observer.subscribe("dbclick", function () {});
+
+      var subscribes = observer.getSubscribes();
+      console.log(subscribes);
+
+      //   observer.cancel("click", fn1);
+      //   var subscribes = observer.getSubscribes();
+      //   console.log(subscribes);
+
+      observer.publish("click", "消息1来了", "消息2来了");
+    </script>
+  </body>
+</html>
